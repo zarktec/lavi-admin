@@ -1,4 +1,4 @@
-import { ShopifyCheckoutSheetProvider } from "@shopify/checkout-sheet-kit";
+import { ColorScheme, ShopifyCheckoutSheetProvider } from "@shopify/checkout-sheet-kit";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View } from "react-native";
@@ -44,7 +44,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <StatusBar style="dark" />
       <AppProvider>
-        <ShopifyCheckoutSheetProvider configuration={{ colorScheme: "automatic" }}>
+        <ShopifyCheckoutSheetProvider configuration={{ colorScheme: ColorScheme.automatic }}>
           <Gate />
         </ShopifyCheckoutSheetProvider>
       </AppProvider>

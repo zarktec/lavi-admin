@@ -9,8 +9,7 @@ const config: ExpoConfig = {
   version: "1.0.0",
   orientation: "portrait",
   scheme: "tumarca", // esquema de la redirección OAuth (tumarca://auth/callback)
-  userInterfaceStyle: "automatic",
-  newArchEnabled: true,
+  userInterfaceStyle: "light",
   ios: {
     bundleIdentifier: bundleId,
     supportsTablet: false,
@@ -34,7 +33,7 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-secure-store",
-    ["react-native-nfc-manager", { nfcPermission: "Usamos el NFC para leer el tag de tu frasco y registrar tu aplicación.", includeNdefEntitlement: false }],
+    ["react-native-nfc-manager", { nfcPermission: "Usamos el NFC para leer el tag de tu frasco y registrar tu aplicación." }],
     "./plugins/withNfcFeature.js",
     ["expo-notifications", { color: "#2f5d50" }],
   ],
