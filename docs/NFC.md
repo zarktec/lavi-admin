@@ -45,3 +45,13 @@ El fabricante entrega un CSV `uid[,key_ref]`; se importa desde **Panel → Tags 
 ## Universal Links / App Links
 
 El backend sirve `/.well-known/apple-app-site-association` y `/.well-known/assetlinks.json` (variables `IOS_APP_ID`, `ANDROID_PACKAGE`, `ANDROID_SHA256_FINGERPRINTS`). Si la app no está instalada, `GET /t` detecta el sistema operativo y lleva a la tienda.
+
+## Modo de pruebas con tags sin SUN (NTAG215)
+
+Para probar el flujo con tags que no tienen SUN (p. ej. NTAG215), define `NFC_INSECURE_TEST_MODE=1`. Entonces el backend también acepta la URL fija
+
+```
+https://<dominio>/t?uid=048D34B22E6180
+```
+
+(UID de 14 hex en mayúsculas, sin dos puntos) y usa como contador los segundos desde 2026-01-01 de la hora de la lectura. **No hay firma: cualquiera que copie esa URL puede "leer" el tag.** Por seguridad nunca funciona si `VERCEL_ENV=production`, aunque la variable esté puesta. Define la variable solo en el entorno *Preview* y bórrala antes del lanzamiento.
