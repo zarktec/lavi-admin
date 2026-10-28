@@ -26,6 +26,11 @@ npm run dev                  # http://localhost:3000  (panel en /admin)
 npm test                     # pruebas de integración contra Postgres (TEST_DATABASE_URL)
 ```
 
+**Contrato de la API de la app (OpenAPI):** [`docs/openapi.json`](docs/openapi.json), también servido en `GET /v1/openapi.json`.
+La fuente es `backend/src/lib/openapi.ts`; tras cambiar una ruta de app en `backend/src/app/v1` (excepto `admin`) edítala y ejecuta
+`npm run openapi:export --prefix backend`. La prueba `tests/openapi.test.ts` falla si falta una ruta o si el JSON exportado está desactualizado.
+La app móvil ([`lavi-app`](https://github.com/zarktec/lavi-app)) genera sus tipos desde ese archivo.
+
 La app móvil se describe en [`mobile/README.md`](mobile/README.md) (requiere *development build*; NFC no funciona en Expo Go).
 
 ## Cómo se cubre la especificación
