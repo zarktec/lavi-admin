@@ -15,9 +15,9 @@ Proyecto: **lavi-admin** (equipo ZarK), conectado a `zarktec/lavi-admin`, direct
 | `SHOPIFY_SHOP_DOMAIN`, `SHOPIFY_SHOP_ID`, `SHOPIFY_ADMIN_TOKEN`, `SHOPIFY_API_SECRET`, `SHOPIFY_API_VERSION` | Shopify |
 | `EMAIL_PROVIDER`, `EMAIL_API_KEY`, `EMAIL_FROM` | Resend o Postmark |
 
-## Primer arranque
-```bash
-DATABASE_URL=<la de producción> npm run migrate --prefix backend
-DATABASE_URL=<la de producción> SUPERADMIN_EMAIL=tu@correo.com ADMIN_BASE_URL=https://<dominio> npm run seed --prefix backend
-```
-El seed imprime el enlace de alta del superadministrador. Registra en Shopify los webhooks `orders/paid`, `refunds/create` y `customers/update` apuntando a `/webhooks/shopify/*`.
+## Primer arranque (automático en cada build)
+El comando de build del proyecto es `npm run migrate && npm run seed && next build`:
+- `migrate` aplica las migraciones que falten (usa `DATABASE_URL_UNPOOLED` si existe).
+- `seed` carga los ajustes iniciales que falten (no pisa los que cambies en el panel) y, si existe la variable `SUPERADMIN_EMAIL` y aún no hay superadministrador, crea su invitación e **imprime el enlace en el log del build** (vence en 24 h). Después de usarlo, borra `SUPERADMIN_EMAIL`.
+
+Registra en Shopify los webhooks `orders/paid`, `refunds/create` y `customers/update` apuntando a `/webhooks/shopify/*`.

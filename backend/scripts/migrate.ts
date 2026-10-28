@@ -4,7 +4,8 @@ import { Client } from "pg";
 
 // Aplica en orden las migraciones de /migrations que aún no se hayan ejecutado.
 async function main() {
-  const url = process.env.DATABASE_URL;
+  // Las migraciones prefieren la conexión directa (sin pool) cuando existe, como en Neon
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (!url) throw new Error("Falta DATABASE_URL");
   const client = new Client({ connectionString: url });
   await client.connect();
