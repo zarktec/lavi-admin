@@ -16,6 +16,10 @@ export async function resetDb() {
   const tables = await db.many<{ tablename: string }>("select tablename from pg_tables where schemaname = 'public'");
   const names = tables.map((t) => t.tablename).filter((t) => !KEEP.has(t));
   await db.exec(`truncate ${names.join(", ")} restart identity cascade`);
+  // Los roles y permisos son datos de referencia: se restauran a su estado inicial
+  await db.exec("delete from role_permissions where role_id in (select id from roles where not is_system)");
+  await db.exec("delete from roles where not is_system");
+  await db.exec("update roles set max_adjustment = 500 where name = 'Servicio al cliente'");
   const seed = JSON.parse(readFileSync(join(process.cwd(), "seed", "settings.seed.json"), "utf8"));
   await saveSettings(db, seed, null);
 }
