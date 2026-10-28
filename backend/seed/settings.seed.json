@@ -1,0 +1,23 @@
+{
+  "point_value_cop": 50,
+  "points_expiration_days": 365,
+  "min_points_to_redeem": 100,
+  "allow_negative_balance": false,
+  "allow_parallel_treatments": true,
+  "offline_scan_max_hours": 48,
+  "offline_device_time_tolerance_minutes": 10,
+  "redemption_code_valid_days": 30,
+  "refund_points_on_expired_code": true,
+  "manual_adjustment_approval_threshold": 1000,
+  "min_app_version": "1.0.0",
+  "activation_token_minutes": 15,
+  "notification_texts": {
+    "reminder_title": "Es hora de tu aplicación",
+    "reminder_body": "Aplica {product} y acerca tu teléfono al frasco para sumar puntos.",
+    "nudge_body": "Aún no registras tu aplicación de {product}. ¡Acerca tu teléfono al frasco!",
+    "backup_title": "¿Ya te aplicaste {product}?",
+    "backup_body": "Tu ventana sigue abierta: acerca el teléfono al frasco para registrar tu dosis.",
+    "repurchase_title": "Tu tratamiento está por terminar",
+    "repurchase_body": "Reordena {product} a tiempo para no interrumpir tu progreso."
+  }
+}
