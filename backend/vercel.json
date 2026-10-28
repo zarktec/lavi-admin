@@ -1,9 +1,3 @@
 {
-  "crons": [
-    { "path": "/cron/close-doses", "schedule": "*/10 * * * *" },
-    { "path": "/cron/backup-push", "schedule": "*/10 * * * *" },
-    { "path": "/cron/expire-points", "schedule": "0 5 * * *" },
-    { "path": "/cron/expire-redemptions", "schedule": "30 5 * * *" },
-    { "path": "/cron/reconcile-redemptions", "schedule": "*/15 * * * *" }
-  ]
+  "crons": [{ "path": "/cron/all", "schedule": "0 8 * * *" }]
 }

@@ -1,6 +1,6 @@
 # Despliegue en Vercel
 
-Proyecto: **lavi-admin** (equipo ZarK), conectado a `zarktec/lavi-admin`, directorio raíz `backend`, plan Pro (Cron cada 10 min no corre en Hobby).
+Proyecto: **lavi-admin** (equipo ZarK), conectado a `zarktec/lavi-admin`, directorio raíz `backend`, plan **Hobby** por ahora (un cron diario `/cron/all`). Al pasar a Pro ver `docs/PENDIENTES.md`.
 
 ## Variables ya cargadas
 `JWT_SECRET`, `APP_ENCRYPTION_KEY`, `CRON_SECRET` (sensibles, generadas al azar) y `ADMIN_IDLE_MINUTES`.
