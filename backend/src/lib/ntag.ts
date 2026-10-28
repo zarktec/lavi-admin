@@ -101,3 +101,32 @@ export function buildSunUrl(opts: { baseUrl: string; uid: string; counter: numbe
   const c = truncateMac(aesCmac(session, Buffer.alloc(0)));
   return `${opts.baseUrl.replace(/\/$/, "")}/t?d=${d.toString("hex").toUpperCase()}&c=${c.toString("hex").toUpperCase()}`;
 }
+
+// ───────────── MODO DE PRUEBAS (inseguro) ─────────────
+// Permite probar el flujo con tags SIN SUN (p. ej. NTAG215), que solo guardan una URL fija:
+//   https://<dominio>/t?uid=048D34B22E6180
+// No hay firma ni contador del tag: cualquiera que copie la URL puede "leer" el tag. Por eso solo
+// funciona con NFC_INSECURE_TEST_MODE=1 y NUNCA en el entorno de producción de Vercel.
+export function insecureTestModeEnabled(): boolean {
+  return process.env.NFC_INSECURE_TEST_MODE === "1" && process.env.VERCEL_ENV !== "production";
+}
+
+/** UID de una URL de prueba, o null si no lo es o el modo no está activo. */
+export function parseTestTagUrl(tagUrl: string, expectedHost?: string): string | null {
+  if (!insecureTestModeEnabled()) return null;
+  let url: URL;
+  try {
+    url = new URL(tagUrl);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || url.pathname !== "/t") return null;
+  if (expectedHost && url.host.toLowerCase() !== expectedHost.toLowerCase()) return null;
+  const uid = url.searchParams.get("uid");
+  return uid && /^[0-9A-Fa-f]{14}$/.test(uid) ? uid.toUpperCase() : null;
+}
+
+const TEST_EPOCH_MS = Date.UTC(2026, 0, 1);
+
+/** Contador sintético para tags sin SUN: segundos desde 2026-01-01 de la hora de la lectura (dispositivo o servidor). */
+export const testCounter = (at: Date) => Math.max(0, Math.floor((at.getTime() - TEST_EPOCH_MS) / 1000));

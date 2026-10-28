@@ -7,7 +7,7 @@ import { Client } from "pg";
 // SUPERADMIN_EMAIL, crea la invitación inicial del superadministrador e imprime su enlace.
 //   SUPERADMIN_EMAIL=persona@empresa.com npm run seed
 async function main() {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (!url) throw new Error("Falta DATABASE_URL");
   const client = new Client({ connectionString: url });
   await client.connect();
@@ -30,7 +30,7 @@ async function main() {
         "insert into invitations (email, name, role_id, token_hash, expires_at) values ($1, $2, $3, $4, now() + interval '24 hours')",
         [email, "Superadministrador", role.rows[0].id, createHash("sha256").update(token).digest("hex")],
       );
-      const base = process.env.ADMIN_BASE_URL ?? "http://localhost:3000";
+      const base = process.env.ADMIN_BASE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
       console.log(`\nInvitación de superadministrador (vence en 24 h):\n${base}/admin/invite?token=${token}\n`);
     }
   }

@@ -3,7 +3,7 @@ import { db, tx, type Db } from "./db";
 import { signActivationToken, type AuthUser } from "./auth-user";
 import { envOpt } from "./env";
 import { streakAt } from "./doses";
-import { loadMasterKeys, parseTagUrl, verifySun } from "./ntag";
+import { loadMasterKeys, parseTagUrl, parseTestTagUrl, testCounter, verifySun, type SunResult } from "./ntag";
 import { addLedger, awardForTreatment, expiryFor, getBalance, lockUser } from "./points";
 import { getSettings, type Settings } from "./settings";
 import { currentConfig, finishIfDone, type ConfigRow } from "./treatments";
@@ -61,8 +61,14 @@ export async function processScan(user: AuthUser, input: ScanInput): Promise<Jso
   const base = { id: scanId, userId: user.id, input, deviceTime: deviceTime && !isNaN(deviceTime.getTime()) ? deviceTime : null };
 
   // 1) Firma y contador
-  const parsed = parseTagUrl(input.tag_url, envOpt("APP_DOMAIN") || undefined);
-  const sun = parsed ? verifySun(parsed.d, parsed.c, loadMasterKeys()) : ({ ok: false } as const);
+  const host = envOpt("APP_DOMAIN") || undefined;
+  const parsed = parseTagUrl(input.tag_url, host);
+  let sun: SunResult = parsed ? verifySun(parsed.d, parsed.c, loadMasterKeys()) : { ok: false };
+  if (!sun.ok) {
+    // Solo con NFC_INSECURE_TEST_MODE (nunca en producción): tag de prueba sin firma
+    const testUid = parseTestTagUrl(input.tag_url, host);
+    if (testUid) sun = { ok: true, uid: testUid, counter: testCounter(base.deviceTime ?? serverNow), keyRef: "test" };
+  }
   if (!sun.ok) {
     const res = rejected("invalid_signature");
     await recordScan(db, { ...base, tagUid: null, counter: null, valid: false, counted: false }, res);

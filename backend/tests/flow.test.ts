@@ -246,3 +246,41 @@ describe("integridad del libro de puntos", () => {
     await expect(db.exec("insert into points_ledger (user_id, amount, reason, reference_type, reference_id) values ($1, 10, 'dose', 'dose', 'd1')", [ana.id])).rejects.toThrow(/duplicate/);
   });
 });
+
+describe("modo de pruebas con tags sin SUN (NTAG215)", () => {
+  const urlFor = (uid: string) => `https://app.example.com/t?uid=${uid}`;
+  const test = (token: string, uid = "048D34B22E6180") => scan(token, 0, { tag_url: urlFor(uid) }, uid);
+  afterEach(() => {
+    delete process.env.NFC_INSECURE_TEST_MODE;
+    delete process.env.VERCEL_ENV;
+  });
+
+  it("está apagado por defecto: la URL sin firma se rechaza", async () => {
+    await seedCatalog({ tags: ["048D34B22E6180"] });
+    const ana = await makeUser();
+    setNow("2026-03-02T11:00:00Z");
+    expect((await test(ana.token)).body).toEqual({ result: "rejected", reason: "invalid_signature" });
+  });
+
+  it("activo, permite activar y registrar dosis; la misma lectura es idempotente", async () => {
+    process.env.NFC_INSECURE_TEST_MODE = "1";
+    await seedCatalog({ tags: ["048D34B22E6180"] });
+    const ana = await makeUser();
+    setNow("2026-03-02T11:00:00Z");
+    const first = await test(ana.token);
+    expect(first.body.result).toBe("activation_required");
+    expect((await test(ana.token)).body).toMatchObject({ result: "activation_required", idempotent_replay: true });
+    const t = await json(await call(treatmentsPOST, "POST", "/v1/treatments", { token: ana.token, body: { activation_token: first.body.activation_token } }));
+    expect(t.status).toBe(201);
+    setNow("2026-03-02T12:30:00Z");
+    expect((await test(ana.token)).body).toMatchObject({ result: "dose_recorded", points_earned: 10 });
+  });
+
+  it("nunca funciona en el entorno de producción de Vercel", async () => {
+    process.env.NFC_INSECURE_TEST_MODE = "1";
+    process.env.VERCEL_ENV = "production";
+    await seedCatalog({ tags: ["048D34B22E6180"] });
+    const ana = await makeUser();
+    expect((await test(ana.token)).body).toEqual({ result: "rejected", reason: "invalid_signature" });
+  });
+});
