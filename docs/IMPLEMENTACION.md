@@ -20,6 +20,12 @@ Donde la especificación deja libertad se tomó la decisión más simple y segur
 * Un frasco = un tratamiento (`treatments.tag_uid` único). `allow_parallel_treatments` controla varios activos.
 * El tratamiento pasa a `finished` cuando ya no quedan dosis por resolver.
 
+## Liberar un tag
+* **Panel → Tags y lotes → Buscar tag → Liberar tag** (permiso `tags.release`; solo el superadministrador lo tiene por defecto, se puede asignar a otros roles). Exige un motivo de 5+ caracteres.
+* Deja el tag **sin reclamar** (también si estaba bloqueado) y **borra el tratamiento** que lo reclamó con sus dosis y cambios de horario, porque `treatments.tag_uid` es único. Se conservan las lecturas (sin dosis asociada), el libro de puntos (la clienta se queda con lo ganado; si hace falta quitarlo, ajuste manual) y el contador del tag (anti-repetición).
+* Quien lo active después —la misma clienta u otra— obtiene un tratamiento nuevo; los puntos de bienvenida, si la configuración los da, se vuelven a otorgar.
+* Queda en la bitácora (`tag.release`) con un resumen de lo borrado. Un lote bloqueado sigue bloqueando sus tags.
+
 ## Puntos
 * **Tope por frasco** (`max_points_per_treatment`) cuenta bienvenida + dosis + bonos de racha.
 * **Racha** = dosis `on_time` consecutivas hasta la actual (una `late` o `missed` la corta). Reglas con `repeatable` pagan cada múltiplo.

@@ -87,6 +87,7 @@ function TagSearch() {
   const [err, setErr] = useState<string | null>(null);
   const [block, setBlock] = useState<boolean | null>(null);
   const [transfer, setTransfer] = useState(false);
+  const [release, setRelease] = useState(false);
   const { run } = useAction();
 
   async function search(u = uid) {
@@ -109,6 +110,7 @@ function TagSearch() {
           <Card title={`Tag ${t.uid}`} actions={<>
             {can("tags.manage") && <Btn onClick={() => setBlock(t.status !== "blocked")}>{t.status === "blocked" ? "Desbloquear tag" : "Bloquear tag"}</Btn>}
             {can("tags.transfer") && t.status === "claimed" && <Btn onClick={() => setTransfer(true)}>Transferir a otra clienta</Btn>}
+            {can("tags.release") && t.user_id && <Btn onClick={() => setRelease(true)}>Liberar tag</Btn>}
           </>}>
             <div className="form-grid">
               <p><b>Estado:</b> <Badge value={t.status} />{t.batch_status === "blocked" && <> <Badge value="blocked" /> lote bloqueado</>}</p>
@@ -134,6 +136,8 @@ function TagSearch() {
       )}
       {block !== null && t && <PromptModal danger={block} title={`${block ? "Bloquear" : "Desbloquear"} tag ${t.uid}`} label="Motivo" confirm={block ? "Bloquear" : "Desbloquear"} onClose={() => setBlock(null)}
         onSubmit={async (reason) => { await api(`/tags/${t.uid}/block`, { body: { blocked: block, reason } }); await search(t.uid); }} />}
+      {release && t && <PromptModal danger min={5} title={`Liberar tag ${t.uid}`} label="Motivo. Se borra el tratamiento de la clienta (sus puntos se conservan) y el tag queda sin reclamar. Queda en la bitácora." confirm="Liberar tag" onClose={() => setRelease(false)}
+        onSubmit={async (reason) => { await api(`/tags/${t.uid}/release`, { body: { reason } }); setRelease(false); await search(t.uid); }} />}
       {transfer && t && <TransferModal uid={t.uid} onClose={() => setTransfer(false)} onDone={() => { setTransfer(false); search(t.uid); }} />}
     </>
   );
