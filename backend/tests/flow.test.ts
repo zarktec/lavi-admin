@@ -252,6 +252,7 @@ describe("modo de pruebas con tags sin SUN (NTAG215)", () => {
   const test = (token: string, uid = "048D34B22E6180") => scan(token, 0, { tag_url: urlFor(uid) }, uid);
   afterEach(() => {
     delete process.env.NFC_INSECURE_TEST_MODE;
+    delete process.env.NFC_INSECURE_TEST_MODE_ALLOW_PRODUCTION;
     delete process.env.VERCEL_ENV;
   });
 
@@ -276,7 +277,17 @@ describe("modo de pruebas con tags sin SUN (NTAG215)", () => {
     expect((await test(ana.token)).body).toMatchObject({ result: "dose_recorded", points_earned: 10 });
   });
 
-  it("nunca funciona en el entorno de producción de Vercel", async () => {
+  it("en producción solo funciona con la excepción explícita NFC_INSECURE_TEST_MODE_ALLOW_PRODUCTION", async () => {
+    process.env.NFC_INSECURE_TEST_MODE = "1";
+    process.env.NFC_INSECURE_TEST_MODE_ALLOW_PRODUCTION = "1";
+    process.env.VERCEL_ENV = "production";
+    await seedCatalog({ tags: ["048D34B22E6180"] });
+    const ana = await makeUser();
+    setNow("2026-03-02T11:00:00Z");
+    expect((await test(ana.token)).body.result).toBe("activation_required");
+  });
+
+  it("por defecto no funciona en el entorno de producción de Vercel", async () => {
     process.env.NFC_INSECURE_TEST_MODE = "1";
     process.env.VERCEL_ENV = "production";
     await seedCatalog({ tags: ["048D34B22E6180"] });

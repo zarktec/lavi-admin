@@ -106,9 +106,12 @@ export function buildSunUrl(opts: { baseUrl: string; uid: string; counter: numbe
 // Permite probar el flujo con tags SIN SUN (p. ej. NTAG215), que solo guardan una URL fija:
 //   https://<dominio>/t?uid=048D34B22E6180
 // No hay firma ni contador del tag: cualquiera que copie la URL puede "leer" el tag. Por eso solo
-// funciona con NFC_INSECURE_TEST_MODE=1 y NUNCA en el entorno de producción de Vercel.
+// funciona con NFC_INSECURE_TEST_MODE=1 y, por defecto, NUNCA en el entorno de producción de Vercel.
+// EXCEPCIÓN TEMPORAL: en producción solo se activa si además NFC_INSECURE_TEST_MODE_ALLOW_PRODUCTION=1
+// (para probar con tags NTAG215 antes del lanzamiento). BORRAR ambas variables antes de lanzar.
 export function insecureTestModeEnabled(): boolean {
-  return process.env.NFC_INSECURE_TEST_MODE === "1" && process.env.VERCEL_ENV !== "production";
+  if (process.env.NFC_INSECURE_TEST_MODE !== "1") return false;
+  return process.env.VERCEL_ENV !== "production" || process.env.NFC_INSECURE_TEST_MODE_ALLOW_PRODUCTION === "1";
 }
 
 /** UID de una URL de prueba, o null si no lo es o el modo no está activo. */
@@ -123,7 +126,11 @@ export function parseTestTagUrl(tagUrl: string, expectedHost?: string): string |
   if (url.protocol !== "https:" || url.pathname !== "/t") return null;
   if (expectedHost && url.host.toLowerCase() !== expectedHost.toLowerCase()) return null;
   const uid = url.searchParams.get("uid");
-  return uid && /^[0-9A-Fa-f]{14}$/.test(uid) ? uid.toUpperCase() : null;
+  if (!uid || !/^[0-9A-Fa-f]{14}$/.test(uid)) return null;
+  if (process.env.VERCEL_ENV === "production") {
+    console.warn(`[nfc:test] Lectura SIN FIRMA aceptada en PRODUCCIÓN (uid ${uid.toUpperCase()}). Quitar NFC_INSECURE_TEST_MODE antes del lanzamiento.`);
+  }
+  return uid.toUpperCase();
 }
 
 const TEST_EPOCH_MS = Date.UTC(2026, 0, 1);

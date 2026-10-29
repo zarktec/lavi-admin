@@ -44,7 +44,7 @@ Al pasar a Pro:
 - [ ] Decidir ubicación del tag en el frasco (no solo en la caja) y probar lectura sobre el envase real (metal, tapa).
 - [ ] Importar el primer lote desde el panel (Tags y lotes).
 
-- [ ] **Borrar `NFC_INSECURE_TEST_MODE`** de Vercel antes del lanzamiento y reemplazar los tags de prueba (NTAG215) por NTAG 424 DNA.
+- [ ] **Borrar `NFC_INSECURE_TEST_MODE` y `NFC_INSECURE_TEST_MODE_ALLOW_PRODUCTION`** de Vercel (producción y preview) antes del lanzamiento y reemplazar los tags de prueba (NTAG215) por NTAG 424 DNA.
 
 ## 5. App móvil
 - [ ] Cuentas **Apple Developer** y **Google Play Console**; identificadores definitivos (`com.tumarca.app`).
