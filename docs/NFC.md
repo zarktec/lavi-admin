@@ -54,4 +54,6 @@ Para probar el flujo con tags que no tienen SUN (p. ej. NTAG215), define `NFC_IN
 https://<dominio>/t?uid=048D34B22E6180
 ```
 
-(UID de 14 hex en mayúsculas, sin dos puntos) y usa como contador los segundos desde 2026-01-01 de la hora de la lectura. **No hay firma: cualquiera que copie esa URL puede "leer" el tag.** Por seguridad nunca funciona si `VERCEL_ENV=production`, aunque la variable esté puesta. Define la variable solo en el entorno *Preview* y bórrala antes del lanzamiento.
+(UID de 14 hex en mayúsculas, sin dos puntos) y usa como contador los segundos desde 2026-01-01 de la hora de la lectura. **No hay firma: cualquiera que copie esa URL puede "leer" el tag.** Por seguridad **no funciona si `VERCEL_ENV=production`**, aunque la variable esté puesta. Define la variable solo en el entorno *Preview* y bórrala antes del lanzamiento.
+
+**Excepción temporal para pruebas en producción:** si de verdad hace falta probar con tags NTAG215 contra el dominio de producción, hay que definir **las dos** variables `NFC_INSECURE_TEST_MODE=1` y `NFC_INSECURE_TEST_MODE_ALLOW_PRODUCTION=1`. Cada lectura sin firma aceptada en producción deja una advertencia `[nfc:test]` en los registros. **Borra ambas antes del lanzamiento.**
