@@ -5,6 +5,8 @@ import { PATCH as schedulePATCH } from "@/app/v1/treatments/[id]/schedule/route"
 import { GET as pointsGET } from "@/app/v1/points/route";
 import { db } from "@/lib/db";
 import { closeDoses } from "@/lib/jobs";
+import { releaseTag } from "@/lib/tag-release";
+import { tx } from "@/lib/db";
 import { call, closePool, json, makeUser, realTime, resetDb, seedCatalog, setNow, tagUrl } from "./helpers";
 
 const UID = "04A1B2C3D4E5F6";
@@ -293,5 +295,63 @@ describe("modo de pruebas con tags sin SUN (NTAG215)", () => {
     await seedCatalog({ tags: ["048D34B22E6180"] });
     const ana = await makeUser();
     expect((await test(ana.token)).body).toEqual({ result: "rejected", reason: "invalid_signature" });
+  });
+});
+
+describe("liberar un tag reclamado", () => {
+  const adminId = null as unknown as string; // la bitácora admite null; aquí no hace falta un administrador real
+
+  it("lo deja sin reclamar, borra el tratamiento, conserva puntos y lecturas, y permite reactivarlo", async () => {
+    await seedCatalog();
+    const ana = await makeUser("ana@example.com");
+    const beto = await makeUser("beto@example.com");
+    setNow("2026-03-02T11:00:00Z");
+    expect((await activate(ana.token)).status).toBe(201);
+    setNow("2026-03-02T12:30:00Z");
+    expect((await scan(ana.token, 1)).body.result).toBe("dose_recorded");
+    const pointsBefore = await balance(ana.token);
+    expect(pointsBefore).toBeGreaterThan(0);
+
+    // Otra clienta no puede usarlo mientras es de Ana
+    expect((await scan(beto.token, 2)).body).toEqual({ result: "rejected", reason: "owned_by_other" });
+
+    const out = await tx((t) => releaseTag(t, adminId, UID.toLowerCase(), "Frasco asignado por error"));
+    expect(out).toMatchObject({ uid: UID, status: "unclaimed", treatment_removed: true });
+
+    const tag = await db.one<any>("select status, claimed_by, claimed_at, last_counter from tags where uid = $1", [UID]);
+    expect(tag).toMatchObject({ status: "unclaimed", claimed_by: null, claimed_at: null });
+    expect(tag.last_counter).toBeGreaterThanOrEqual(2); // el contador se conserva (anti-repetición)
+    expect(Number((await db.one<any>("select count(*) as n from treatments where tag_uid = $1", [UID]))!.n)).toBe(0);
+    expect(Number((await db.one<any>("select count(*) as n from doses", []))!.n)).toBe(0);
+    expect(Number((await db.one<any>("select count(*) as n from scans where tag_uid = $1 and dose_id is not null", [UID]))!.n)).toBe(0);
+    expect(Number((await db.one<any>("select count(*) as n from scans where tag_uid = $1", [UID]))!.n)).toBeGreaterThanOrEqual(3);
+    expect(await balance(ana.token)).toBe(pointsBefore);
+    const log = await db.one<any>("select action, entity_id, before, after from audit_log where action = 'tag.release'");
+    expect(log).toMatchObject({ entity_id: UID });
+    expect(log.before.treatment.doses).toBeTruthy();
+
+    // Ahora Beto lo puede activar
+    const act = await scan(beto.token, 3);
+    expect(act.body.result).toBe("activation_required");
+    const t2 = await json(await call(treatmentsPOST, "POST", "/v1/treatments", { token: beto.token, body: { activation_token: act.body.activation_token } }));
+    expect(t2.status).toBe(201);
+  });
+
+  it("libera también un tag bloqueado con dueña, y rechaza uno sin reclamar", async () => {
+    await seedCatalog({ tags: [UID, "048D34B22E6180"] });
+    await expect(tx((t) => releaseTag(t, adminId, "048D34B22E6180", "motivo de prueba"))).rejects.toMatchObject({ code: "tag_not_claimed" });
+
+    const ana = await makeUser("ana@example.com");
+    setNow("2026-03-02T11:00:00Z");
+    expect((await activate(ana.token)).status).toBe(201);
+    await db.exec("update tags set status = 'blocked', blocked_reason = 'x' where uid = $1", [UID]);
+    const out = await tx((t) => releaseTag(t, adminId, UID, "Liberar tag bloqueado"));
+    expect(out.status).toBe("unclaimed");
+    expect((await db.one<any>("select blocked_reason from tags where uid = $1", [UID]))!.blocked_reason).toBeNull();
+  });
+
+  it("un tag inexistente responde tag_not_found", async () => {
+    await seedCatalog();
+    await expect(tx((t) => releaseTag(t, adminId, "AAAAAAAAAAAAAA", "motivo de prueba"))).rejects.toMatchObject({ code: "tag_not_found" });
   });
 });
