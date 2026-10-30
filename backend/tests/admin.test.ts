@@ -219,4 +219,41 @@ describe("ajustes globales y reportes", () => {
     expect(found.body.customers).toHaveLength(1);
     expect((await json(await call(fraudGET, "GET", "/x", { cookie: root.cookie }))).status).toBe(200);
   });
+
+  it("lista todas las clientas con paginación, búsqueda y filtro por estado", async () => {
+    const root = await onboard("root@example.com", "Superadministrador");
+    for (let i = 1; i <= 7; i++) await makeUser(`clienta${i}@example.com`);
+    await db.exec("update users set status = 'blocked' where email = 'clienta3@example.com'");
+    const list = async (qs = "") => json(await call(customersGET, "GET", `/v1/admin/customers${qs}`, { cookie: root.cookie }));
+
+    // Sin parámetros: todas, primera página
+    const all = await list();
+    expect(all.status).toBe(200);
+    expect(all.body).toMatchObject({ page: 1, page_size: 25, total: 7, total_pages: 1 });
+    expect(all.body.customers).toHaveLength(7);
+
+    // Páginas de 5: 5 + 2, sin repetir ni saltar clientas
+    const p1 = await list("?page_size=5&page=1");
+    const p2 = await list("?page_size=5&page=2");
+    expect(p1.body).toMatchObject({ page: 1, total: 7, total_pages: 2 });
+    expect(p1.body.customers).toHaveLength(5);
+    expect(p2.body.customers).toHaveLength(2);
+    const ids = [...p1.body.customers, ...p2.body.customers].map((c: any) => c.id);
+    expect(new Set(ids).size).toBe(7);
+
+    // Una página fuera de rango se corrige a la última
+    expect((await list("?page_size=5&page=99")).body).toMatchObject({ page: 2 });
+
+    // Búsqueda y estado se combinan con la paginación
+    expect((await list("?q=clienta3")).body).toMatchObject({ total: 1 });
+    expect((await list("?status=blocked")).body).toMatchObject({ total: 1 });
+    expect((await list("?status=active")).body).toMatchObject({ total: 6 });
+    expect((await list("?q=clienta&status=blocked")).body.customers).toHaveLength(1);
+
+    // Validaciones
+    expect((await list("?q=ab")).status).toBe(400);
+    expect((await list("?page=0")).status).toBe(400);
+    expect((await list("?page_size=1000")).status).toBe(400);
+    expect((await list("?status=otra")).status).toBe(400);
+  });
 });
