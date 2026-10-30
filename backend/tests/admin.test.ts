@@ -19,10 +19,12 @@ import { GET as dashboardGET } from "@/app/v1/admin/dashboard/route";
 import { GET as fraudGET } from "@/app/v1/admin/reports/fraud/route";
 import { GET as adherenceGET } from "@/app/v1/admin/reports/adherence/route";
 import { GET as customersGET } from "@/app/v1/admin/customers/route";
+import { GET as batchTagsGET } from "@/app/v1/admin/tag-batches/[id]/tags/route";
+import { GET as tagSearchGET } from "@/app/v1/admin/tags/route";
 import { currentTotp } from "@/lib/auth-admin";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { db } from "@/lib/db";
-import { call, closePool, json, makeUser, realTime, resetDb } from "./helpers";
+import { call, closePool, json, makeUser, realTime, resetDb, seedCatalog } from "./helpers";
 
 const PASSWORD = "Clave-Segura-2026";
 
@@ -218,6 +220,41 @@ describe("ajustes globales y reportes", () => {
     const found = await json(await call(customersGET, "GET", "/v1/admin/customers?q=busqueda", { cookie: root.cookie }));
     expect(found.body.customers).toHaveLength(1);
     expect((await json(await call(fraudGET, "GET", "/x", { cookie: root.cookie }))).status).toBe(200);
+  });
+
+  it("lista los tags de un lote con paginación, búsqueda y estado; el detalle enlaza al lote", async () => {
+    const root = await onboard("root@example.com", "Superadministrador");
+    const uids = Array.from({ length: 7 }, (_, i) => `04A1B2C3D4E5F${i}`);
+    const { batchId } = await seedCatalog({ tags: uids });
+    const ana = await makeUser("ana@example.com");
+    await db.exec("update tags set status = 'claimed', claimed_by = $1, claimed_at = now() where uid = $2", [ana.id, uids[2]]);
+    await db.exec("update tags set status = 'blocked', blocked_reason = 'x' where uid = $1", [uids[5]]);
+    const list = async (qs = "", id = batchId) => json(await call(batchTagsGET, "GET", `/x${qs}`, { cookie: root.cookie, params: { id } }));
+
+    const all = await list();
+    expect(all.status).toBe(200);
+    expect(all.body.batch).toMatchObject({ id: batchId, batch_code: "L1", tags_total: 7, tags_claimed: 1, tags_blocked: 1 });
+    expect(all.body).toMatchObject({ page: 1, total: 7, total_pages: 1 });
+    expect(all.body.tags.map((t: any) => t.uid)).toEqual([...uids].sort());
+    expect(all.body.tags.find((t: any) => t.uid === uids[2])).toMatchObject({ status: "claimed", user_email: "ana@example.com" });
+
+    const p1 = await list("?page_size=5&page=1");
+    const p2 = await list("?page_size=5&page=2");
+    expect(p1.body.tags).toHaveLength(5);
+    expect(p2.body.tags).toHaveLength(2);
+    expect(new Set([...p1.body.tags, ...p2.body.tags].map((t: any) => t.uid)).size).toBe(7);
+
+    expect((await list(`?q=${uids[3].slice(-4)}`)).body.total).toBe(1);
+    expect((await list("?status=blocked")).body.tags.map((t: any) => t.uid)).toEqual([uids[5]]);
+    expect((await list("?status=unclaimed")).body.total).toBe(5);
+    expect((await list("?q=ab")).status).toBe(400);
+    expect((await list("?page_size=1000")).status).toBe(400);
+    expect((await list("", "no-es-un-uuid")).status).toBe(404);
+    expect((await list("", "00000000-0000-4000-8000-000000000000")).status).toBe(404);
+
+    // El detalle de un tag trae el id del lote para enlazar de vuelta al listado
+    const detail = await json(await call(tagSearchGET, "GET", `/x?uid=${uids[2]}`, { cookie: root.cookie }));
+    expect(detail.body.tag).toMatchObject({ uid: uids[2], batch_id: batchId, batch_code: "L1" });
   });
 
   it("lista todas las clientas con paginación, búsqueda y filtro por estado", async () => {

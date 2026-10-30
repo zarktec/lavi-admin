@@ -32,7 +32,7 @@ export default function CustomerPage() {
               <p><b>Alta:</b> {fmtDate(u.created_at)}</p>
               <p><b>Autorización de datos:</b> {fmtDate(u.data_consent_at)}</p>
               <p><b>Saldo de puntos:</b> {data.balance}</p>
-              <p><b>Tags:</b> {data.tags.map((t: any) => <span key={t.uid}><Link href="/admin/tags">{t.uid}</Link> <Badge value={t.status} /> </span>)}</p>
+              <p><b>Tags:</b> {data.tags.map((t: any) => <span key={t.uid}><Link href={`/admin/tags/${t.uid}`}>{t.uid}</Link> <Badge value={t.status} /> </span>)}</p>
             </div>
           </Card>
           <Tabs value={tab} onChange={setTab} tabs={[["treatments", "Calendario de dosis"], ["scans", "Lecturas"], ["changes", "Cambios de horario"], ["ledger", "Puntos"], ["redemptions", "Canjes"], ["adjustments", "Ajustes"]]} />

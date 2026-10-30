@@ -8,7 +8,7 @@ import { ok, parseQuery } from "@/lib/http";
 export const GET = adminHandle("tags.view", async (req) => {
   const { uid } = parseQuery(req, z.object({ uid: z.string().trim().min(6).max(20) }));
   const tag = await db.one<any>(
-    `select t.uid, t.status, t.last_counter, t.key_ref, t.claimed_at, t.blocked_reason, t.shopify_order_id, b.batch_code, b.status as batch_status,
+    `select t.uid, t.status, t.last_counter, t.key_ref, t.claimed_at, t.blocked_reason, t.shopify_order_id, b.id as batch_id, b.batch_code, b.status as batch_status,
             v.name as variant_name, p.name as product_name, u.id as user_id, u.email as user_email, u.name as user_name
        from tags t join tag_batches b on b.id = t.batch_id join product_variants v on v.id = t.variant_id join products p on p.id = v.product_id
        left join users u on u.id = t.claimed_by where t.uid = $1`,
