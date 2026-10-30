@@ -11,7 +11,7 @@ export default function TagsPage() {
   const [tab, setTab] = useState("batches");
   return (
     <>
-      <PageHeader title="Tags y lotes" />
+      <PageHeader title="Tags y lotes" subtitle="Importa lotes del fabricante, revisa sus tags y busca cualquier tag por UID." />
       <Tabs tabs={[["batches", "Lotes"], ["search", "Buscar tag"]]} value={tab} onChange={setTab} />
       {tab === "batches" ? <Batches /> : <TagSearch />}
     </>

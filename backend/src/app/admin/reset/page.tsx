@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Field } from "../_components/ui";
+import { Field, AuthShell } from "../_components/ui";
 import { api } from "../_lib/api";
 
 function ResetForm() {
@@ -23,7 +23,7 @@ function ResetForm() {
     }
   }
   return (
-    <main className="auth">
+    <AuthShell>
       <h1>Nueva contraseña</h1>
       {done ? (
         <p>Listo. Ya puedes <Link href="/admin/login">ingresar</Link> con tu nueva contraseña (y tu verificación en dos pasos).</p>
@@ -35,7 +35,7 @@ function ResetForm() {
           <button className="btn primary" style={{ width: "100%" }}>Guardar</button>
         </form>
       )}
-    </main>
+    </AuthShell>
   );
 }
 

@@ -19,7 +19,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="toasts" role="status" aria-live="polite">
         {items.map((i) => (
-          <div key={i.id} className={`toast ${i.kind}`}>{i.msg}</div>
+          <div key={i.id} className={`toast ${i.kind}`}>
+            <Icon name={i.kind === "error" ? "alert" : "check"} size={18} />
+            <span>{i.msg}</span>
+            <button type="button" aria-label="Cerrar aviso" onClick={() => setItems((s) => s.filter((x) => x.id !== i.id))}><Icon name="close" size={16} /></button>
+          </div>
         ))}
       </div>
     </ToastCtx.Provider>
@@ -69,22 +73,107 @@ export function useAction() {
   return { run, busy };
 }
 
+// ───── Iconos (trazos de 24 px, heredan el color del texto) ─────
+const ICONS: Record<string, string> = {
+  home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
+  package: "M21 8 12 3 3 8m18 0-9 5m9-5v8l-9 5m0-8L3 8m9 5v8M3 8v8l9 5",
+  tag: "M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01",
+  users: "M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8",
+  star: "M12 2l3.1 6.3 6.9 1-5 4.8 1.2 6.9L12 17.8 5.8 21 7 14.1 2 9.3l6.9-1z",
+  chart: "M3 3v18h18M7 14l3-3 3 3 5-6",
+  sliders: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6",
+  shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  log: "M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 3h6v4H9zM9 12h6M9 16h6",
+  logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
+  menu: "M3 6h18M3 12h18M3 18h18",
+  close: "M18 6 6 18M6 6l12 12",
+  alert: "M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+  check: "M20 6 9 17l-5-5",
+  "check-circle": "M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3",
+  arrow: "M5 12h14M13 6l6 6-6 6",
+  back: "M19 12H5M11 18l-6-6 6-6",
+  search: "M21 21l-4.3-4.3M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z",
+  inbox: "M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z",
+  gift: "M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z",
+  radar: "M19.1 4.9A10 10 0 1 0 21.7 14M15 9a5 5 0 1 0 2.8 4.8M12 12l7-7",
+};
+export type IconName = keyof typeof ICONS;
+export function Icon({ name, size = 20, className }: { name: IconName; size?: number; className?: string }) {
+  return (
+    <svg className={`icon ${className ?? ""}`} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d={ICONS[name]} />
+    </svg>
+  );
+}
+
+export function EmptyState({ title, children, icon = "inbox", action }: { title: string; children?: ReactNode; icon?: IconName; action?: ReactNode }) {
+  return (
+    <div className="empty">
+      <div className="ico"><Icon name={icon} size={26} /></div>
+      <b>{title}</b>
+      {children && <p>{children}</p>}
+      {action && <div className="row" style={{ justifyContent: "center", marginTop: 12 }}>{action}</div>}
+    </div>
+  );
+}
+
+/** Tarjeta de indicador. Con `href` es una acción: lleva a donde se resuelve (los pendientes se pintan según severidad). */
+export function Stat({ label, value, hint, icon, href, tone }: { label: string; value: ReactNode; hint?: ReactNode; icon?: IconName; href?: string; tone?: "ok" | "warn" | "bad" }) {
+  const inner = href ? (
+    <>
+      {icon && <div className="ico"><Icon name={icon} size={22} /></div>}
+      <div className="body"><div className="label">{label}</div><div className="value">{value ?? "—"}</div>{hint && <div className="hint">{hint}</div>}</div>
+      <Icon name="arrow" size={18} className="go" />
+    </>
+  ) : (
+    <>
+      <div className="label">{icon && <Icon name={icon} size={16} />}{label}</div>
+      <div className="value">{value ?? "—"}</div>
+      {hint && <div className="hint">{hint}</div>}
+    </>
+  );
+  if (href) return <a className={`stat action ${tone ?? ""}`} href={href}>{inner}</a>;
+  return <div className="stat">{inner}</div>;
+}
+
+/** Barra de progreso accesible (valor 0–1). */
+export function Bar({ value, tone, label }: { value: number; tone?: "ok" | "warn" | "bad"; label: string }) {
+  const v = Math.max(0, Math.min(1, value));
+  return <div className={`bar ${tone ?? ""}`} role="progressbar" aria-label={label} aria-valuenow={Math.round(v * 100)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${v * 100}%` }} /></div>;
+}
+
 // ───── Componentes ─────
-export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
+export function PageHeader({ title, subtitle, crumbs, children }: { title: string; subtitle?: ReactNode; crumbs?: { label: string; href?: string }[]; children?: ReactNode }) {
   return (
     <header className="page-header">
-      <h1>{title}</h1>
+      <div className="titles">
+        {crumbs && crumbs.length > 0 && (
+          <nav className="crumbs" aria-label="Ruta">
+            {crumbs.map((c, i) => (
+              <span key={i} className="row" style={{ gap: 6 }}>
+                {i > 0 && <span className="sep" aria-hidden="true">/</span>}
+                {c.href ? <a href={c.href}>{c.label}</a> : <span aria-current="page">{c.label}</span>}
+              </span>
+            ))}
+          </nav>
+        )}
+        <h1>{title}</h1>
+        {subtitle && <p className="subtitle">{subtitle}</p>}
+      </div>
       <div className="row">{children}</div>
     </header>
   );
 }
 
-export function Card({ title, children, actions }: { title?: string; children: ReactNode; actions?: ReactNode }) {
+export function Card({ title, description, children, actions, flush }: { title?: string; description?: ReactNode; children: ReactNode; actions?: ReactNode; flush?: boolean }) {
   return (
-    <section className="card">
+    <section className={`card ${flush ? "flush" : ""}`}>
       {(title || actions) && (
         <div className="card-head">
-          {title && <h2>{title}</h2>}
+          <div>
+            {title && <h2>{title}</h2>}
+            {description && <p className="desc">{description}</p>}
+          </div>
           <div className="row">{actions}</div>
         </div>
       )}
@@ -93,8 +182,8 @@ export function Card({ title, children, actions }: { title?: string; children: R
   );
 }
 
-export function Btn({ kind = "default", ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "default" | "primary" | "danger" | "link" }) {
-  return <button type="button" {...p} className={`btn ${kind} ${p.className ?? ""}`} />;
+export function Btn({ kind = "default", loading, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "default" | "primary" | "danger" | "danger-outline" | "link"; loading?: boolean }) {
+  return <button type="button" {...p} disabled={p.disabled || loading} aria-busy={loading || undefined} className={`btn ${kind} ${p.className ?? ""}`} />;
 }
 
 const BADGE: Record<string, string> = {
@@ -113,18 +202,20 @@ export interface Col<T> {
   cell: (row: T) => ReactNode;
   align?: "right";
 }
+/** Columnas de fecha, UID o importes: no se parten en dos líneas. */
+const NOWRAP = /fecha|alta|importado|reclamado|ingreso|vence|rige|pidió|creado|uid|saldo|puntos|contador|dosis|costo|pts/i;
 export function Table<T>({ rows, cols, empty = "Sin resultados", onRow }: { rows: T[]; cols: Col<T>[]; empty?: string; onRow?: (r: T) => void }) {
-  if (!rows.length) return <p className="muted pad">{empty}</p>;
+  if (!rows.length) return <EmptyState title={empty} icon="inbox" />;
   return (
     <div className="table-wrap">
       <table>
         <thead>
-          <tr>{cols.map((c) => <th key={c.header} className={c.align}>{c.header}</th>)}</tr>
+          <tr>{cols.map((c) => <th key={c.header} scope="col" className={c.align}>{c.header}</th>)}</tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} onClick={onRow ? () => onRow(r) : undefined} className={onRow ? "clickable" : ""}>
-              {cols.map((c) => <td key={c.header} className={c.align}>{c.cell(r)}</td>)}
+              {cols.map((c) => <td key={c.header} className={`${c.align ?? ""} ${NOWRAP.test(c.header) ? "nowrap" : ""}`}>{c.cell(r)}</td>)}
             </tr>
           ))}
         </tbody>
@@ -189,7 +280,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
       <div className={`modal ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title} ref={ref}>
         <div className="card-head">
           <h2>{title}</h2>
-          <Btn kind="link" onClick={onClose} aria-label="Cerrar">✕</Btn>
+          <Btn kind="link" onClick={onClose} aria-label="Cerrar"><Icon name="close" size={18} /></Btn>
         </div>
         {children}
       </div>
@@ -224,6 +315,28 @@ export function Tabs({ tabs, value, onChange }: { tabs: [string, string][]; valu
 }
 
 export const Loading = ({ error, loading }: { error: string | null; loading: boolean }) =>
-  error ? <p className="error pad" role="alert">{error}</p> : loading ? <p className="muted pad">Cargando…</p> : null;
+  error ? (
+    <div className="notice" role="alert"><Icon name="alert" size={18} /><span>{error}</span></div>
+  ) : loading ? (
+    <div className="skeleton" role="status" aria-label="Cargando"><i /><i /><i /></div>
+  ) : null;
 
 export const Json = ({ v }: { v: unknown }) => (v == null ? <span className="muted">—</span> : <pre className="json">{JSON.stringify(v, null, 1)}</pre>);
+
+/** Marco de las pantallas de acceso: panel de marca a la izquierda y formulario a la derecha (solo formulario en móvil). */
+export function AuthShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="auth-shell">
+      <aside className="auth-brand" aria-hidden="true">
+        <div className="brand"><div className="logo">L</div><div>Lavi<small>Panel administrativo</small></div></div>
+        <div>
+          <h2>Adherencia que se nota, puntos que se ganan.</h2>
+          <p>Gestiona clientas, tags, puntos y canjes del programa en un solo lugar.</p>
+          <ul><li>Acceso protegido con verificación en dos pasos</li><li>Cada acción queda en la bitácora</li><li>Roles y permisos por área</li></ul>
+        </div>
+        <small style={{ color: "#a9a3c9" }}>© Lavi</small>
+      </aside>
+      <div className="auth-panel"><main className="auth" id="contenido">{children}</main></div>
+    </div>
+  );
+}

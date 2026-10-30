@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Badge, Btn, Card, Field, Loading, Modal, PageHeader, Table, Tabs, useAction, useLoad } from "../../../_components/ui";
-import { api, fmtDate, fmtDay } from "../../../_lib/api";
+import { api, fmtDate, fmtDay, initials, num } from "../../../_lib/api";
 import { useMe } from "../../layout";
 
 const RESULT: Record<string, string> = { activation_required: "Activación", dose_recorded: "Dosis a tiempo", too_early: "Muy temprano", late: "Tarde", no_pending_dose: "Sin dosis pendiente", treatment_finished: "Terminado", rejected: "Rechazada" };
@@ -17,30 +17,35 @@ export default function CustomerPage() {
   const u = data?.user;
   return (
     <>
-      <PageHeader title={u ? `${u.name ?? "Clienta"} · ${u.email ?? ""}` : "Clienta"}>
-        <Link className="btn" href="/admin/customers">← Volver</Link>
+      <PageHeader title="Ficha de clienta" crumbs={[{ label: "Clientas", href: "/admin/customers" }, { label: u?.name ?? "Ficha" }]}>
         {can("points.adjust") && u && <Btn kind="primary" onClick={() => setAdjust(true)}>Ajuste manual de puntos</Btn>}
       </PageHeader>
       <Loading error={error} loading={loading} />
       {data && (
         <>
           <Card>
-            <div className="form-grid">
-              <p><b>Estado:</b> <Badge value={u.status} /></p>
-              <p><b>Teléfono:</b> {u.phone ?? "—"}</p>
-              <p><b>Zona horaria:</b> {u.timezone}</p>
-              <p><b>Alta:</b> {fmtDate(u.created_at)}</p>
-              <p><b>Autorización de datos:</b> {fmtDate(u.data_consent_at)}</p>
-              <p><b>Saldo de puntos:</b> {data.balance}</p>
-              <p><b>Tags:</b> {data.tags.map((t: any) => <span key={t.uid}><Link href={`/admin/tags/${t.uid}`}>{t.uid}</Link> <Badge value={t.status} /> </span>)}</p>
+            <div className="profile">
+              <div className="avatar lg" aria-hidden="true">{initials(u.name ?? u.email)}</div>
+              <div className="who">
+                <h2>{u.name ?? "Sin nombre"} <Badge value={u.status} /></h2>
+                <p>{u.email ?? "Sin correo"}{u.phone ? ` · ${u.phone}` : ""}</p>
+              </div>
             </div>
+            <dl className="facts">
+              <div><dt>Saldo de puntos</dt><dd className={data.balance < 0 ? "neg" : ""}>{num(data.balance)}</dd></div>
+              <div><dt>Tratamientos</dt><dd>{num(data.treatments.length)}</dd></div>
+              <div><dt>Tags</dt><dd>{data.tags.length ? data.tags.map((t: any) => <span key={t.uid} style={{ marginRight: 8, fontSize: 14 }}><a href={`/admin/tags/${t.uid}`}>{t.uid}</a> <Badge value={t.status} /></span>) : "—"}</dd></div>
+              <div><dt>Zona horaria</dt><dd style={{ fontSize: 15 }}>{u.timezone}</dd></div>
+              <div><dt>Alta</dt><dd style={{ fontSize: 15 }}>{fmtDate(u.created_at)}</dd></div>
+              <div><dt>Autorización de datos</dt><dd style={{ fontSize: 15 }}>{fmtDate(u.data_consent_at)}</dd></div>
+            </dl>
           </Card>
           <Tabs value={tab} onChange={setTab} tabs={[["treatments", "Calendario de dosis"], ["scans", "Lecturas"], ["changes", "Cambios de horario"], ["ledger", "Puntos"], ["redemptions", "Canjes"], ["adjustments", "Ajustes"]]} />
           {tab === "treatments" && (data.treatments.length ? data.treatments.map((t: any) => (
             <Card key={t.id} title={`${t.product_name} · ${t.variant_name} (config v${t.config_version})`} actions={<Badge value={t.status} />}>
               <p className="muted">Tag {t.tag_uid} · {fmtDay(t.start_date)} a {fmtDay(t.end_date)} · horarios {t.reminder_times.join(", ")} · {t.points_earned} puntos ganados</p>
               <div className="doses">{t.doses.map((d: any) => <span key={d.id} className={`dose ${d.status}`} title={`${fmtDate(d.window_start)} – ${fmtDate(d.window_end)} · ${d.status}`}>{new Date(d.window_start).toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit" })}</span>)}</div>
-              <p className="muted">Verde: a tiempo · Amarillo: tarde · Rojo: perdida · Gris: programada</p>
+              <p className="legend"><span><i style={{ background: "#d3eedd" }} /> ✓ A tiempo</span><span><i style={{ background: "#fde9bd" }} /> ! Tarde</span><span><i style={{ background: "#f9cfcb" }} /> ✕ Perdida</span><span><i style={{ background: "#eeecf5", border: "1px solid #e0dcec" }} /> · Programada</span></p>
             </Card>
           )) : <p className="muted">Sin tratamientos.</p>)}
           {tab === "scans" && <Card><Table rows={data.scans} cols={[

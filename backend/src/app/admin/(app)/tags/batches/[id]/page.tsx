@@ -26,18 +26,17 @@ export default function BatchPage() {
 
   return (
     <>
-      <PageHeader title={b ? `Lote ${b.batch_code}` : "Lote"}>
-        <Link className="btn" href="/admin/tags">← Volver</Link>
-      </PageHeader>
+      <PageHeader title={b ? `Lote ${b.batch_code}` : "Lote"} subtitle={b ? `${b.product_name} · ${b.variant_name}` : undefined} crumbs={[{ label: "Tags y lotes", href: "/admin/tags" }, { label: b?.batch_code ?? "Lote" }]} />
       <Loading error={error} loading={loading && !data} />
       {b && (
         <Card>
-          <div className="form-grid">
-            <p><b>Presentación:</b> {b.product_name} · {b.variant_name}</p>
-            <p><b>Estado:</b> <Badge value={b.status} /></p>
-            <p><b>Importado:</b> {fmtDate(b.imported_at)}</p>
-            <p><b>Tags:</b> {b.tags_total} ({b.tags_claimed} reclamados, {b.tags_blocked} bloqueados)</p>
-          </div>
+          <dl className="facts" style={{ margin: 0, padding: 0, border: 0 }}>
+            <div><dt>Estado</dt><dd><Badge value={b.status} /></dd></div>
+            <div><dt>Importado</dt><dd style={{ fontSize: 15 }}>{fmtDate(b.imported_at)}</dd></div>
+            <div><dt>Tags en el lote</dt><dd>{b.tags_total}</dd></div>
+            <div><dt>Reclamados</dt><dd>{b.tags_claimed}</dd></div>
+            <div><dt>Bloqueados</dt><dd className={b.tags_blocked ? "neg" : ""}>{b.tags_blocked}</dd></div>
+          </dl>
         </Card>
       )}
       {data && (

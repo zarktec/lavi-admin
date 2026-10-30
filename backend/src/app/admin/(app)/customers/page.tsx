@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge, Btn, Card, Loading, PageHeader, Pagination, Table, useAction, useLoad } from "../../_components/ui";
-import { api, fmtDate } from "../../_lib/api";
+import { api, fmtDate, num } from "../../_lib/api";
 import { useMe } from "../layout";
 
 const STATUS_LABEL: Record<string, string> = { "": "Todas", active: "Activas", blocked: "Bloqueadas", deleted: "Eliminadas" };
@@ -26,7 +26,7 @@ export default function CustomersPage() {
 
   return (
     <>
-      <PageHeader title="Clientas" />
+      <PageHeader title="Clientas" subtitle="Todas las clientas del programa. Busca por correo, teléfono, nombre o UID de tag." />
       {can("points.approve") && <Pending />}
       {can("customers.view") && (
         <Card>
@@ -42,11 +42,15 @@ export default function CustomersPage() {
           {data && (
             <>
               <Table rows={data.customers} empty={q || status ? "Sin resultados con esos filtros" : "Aún no hay clientas"} cols={[
-                { header: "Nombre", cell: (c: any) => <Link href={`/admin/customers/${c.id}`}>{c.name ?? "—"}</Link> },
-                { header: "Correo", cell: (c: any) => c.email ?? "—" },
+                { header: "Clienta", cell: (c: any) => (
+                  <div>
+                    <Link href={`/admin/customers/${c.id}`} style={{ fontWeight: 600 }}>{c.name ?? "Sin nombre"}</Link>
+                    <div className="muted" style={{ fontSize: 13 }}>{c.email ?? "—"}</div>
+                  </div>
+                ) },
                 { header: "Teléfono", cell: (c: any) => c.phone ?? "—" },
-                { header: "Saldo", cell: (c: any) => c.balance, align: "right" },
-                { header: "Tratamientos activos", cell: (c: any) => c.active_treatments, align: "right" },
+                { header: "Saldo", cell: (c: any) => <span className={c.balance < 0 ? "error" : ""}>{num(c.balance)}</span>, align: "right" },
+                { header: "En curso", cell: (c: any) => c.active_treatments, align: "right" },
                 { header: "Estado", cell: (c: any) => <Badge value={c.status} /> },
                 { header: "Alta", cell: (c: any) => fmtDate(c.created_at) },
               ]} />
@@ -64,8 +68,9 @@ function Pending() {
   const { data, error, loading, reload } = useLoad<any>("/adjustments");
   const { run, busy } = useAction();
   const decide = async (id: string, approve: boolean) => { if (await run(() => api(`/adjustments/${id}/decision`, { body: { approve } }), approve ? "Ajuste aprobado" : "Ajuste rechazado")) reload(); };
+  if (data && data.adjustments.length === 0) return null; // sin pendientes no hace falta ocupar la pantalla
   return (
-    <Card title="Ajustes manuales por aprobar">
+    <Card title="Ajustes manuales por aprobar" description="Superan el umbral de aprobación: revísalos antes de que se apliquen.">
       <Loading error={error} loading={loading} />
       {data && <Table rows={data.adjustments} empty="No hay ajustes pendientes" cols={[
         { header: "Clienta", cell: (a: any) => <Link href={`/admin/customers/${a.user_id}`}>{a.user_email}</Link> },

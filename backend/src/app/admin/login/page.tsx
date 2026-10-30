@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { TotpSetup } from "../_components/TotpSetup";
-import { Field } from "../_components/ui";
+import { Field, AuthShell } from "../_components/ui";
 import { api } from "../_lib/api";
 import { useSearchParams } from "next/navigation";
 
@@ -16,16 +16,21 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submitCredentials(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setBusy(true);
     try {
       const r = await api("/auth/login", { body: { email, password }, noRedirect: true });
       setStep({ kind: "code", setup: r.mfa === "setup" ? { uri: r.otpauth_uri, secret: r.secret } : undefined });
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
   async function submitCode(e: React.FormEvent) {
@@ -41,16 +46,21 @@ function LoginForm() {
   }
 
   return (
-    <main className="auth">
-      <h1>Panel administrativo</h1>
+    <AuthShell>
+      <h1>Bienvenida de vuelta</h1>
       {reason === "expired" && <div className="notice" role="alert">Tu sesión venció por inactividad. Vuelve a ingresar.</div>}
       {step.kind === "credentials" ? (
         <form onSubmit={submitCredentials}>
           <p>Ingresa con tu cuenta del panel.</p>
           <Field label="Correo"><input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-          <Field label="Contraseña"><input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
+          <Field label="Contraseña">
+            <span className="pw">
+              <input type={showPw ? "text" : "password"} autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <button type="button" className="btn link sm" onClick={() => setShowPw((v) => !v)} aria-pressed={showPw}>{showPw ? "Ocultar" : "Mostrar"}</button>
+            </span>
+          </Field>
           {error && <p className="error" role="alert">{error}</p>}
-          <button className="btn primary" style={{ width: "100%" }}>Continuar</button>
+          <button className="btn primary" style={{ width: "100%" }} disabled={busy} aria-busy={busy || undefined}>Continuar</button>
           <p><Link href="/admin/forgot">Olvidé mi contraseña</Link></p>
         </form>
       ) : (
@@ -68,7 +78,7 @@ function LoginForm() {
           <button className="btn primary" style={{ width: "100%" }}>Verificar e ingresar</button>
         </form>
       )}
-    </main>
+    </AuthShell>
   );
 }
 

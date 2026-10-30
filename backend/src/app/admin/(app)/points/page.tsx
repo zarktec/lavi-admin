@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge, Btn, Card, Field, Loading, Modal, PageHeader, PromptModal, Table, useAction, useLoad } from "../../_components/ui";
-import { api, fmtDate } from "../../_lib/api";
+import { api, cop, fmtDate } from "../../_lib/api";
 import { useMe } from "../layout";
 
 const TYPES: Record<string, string> = { fixed_amount: "Monto fijo (COP)", percentage: "Porcentaje", free_product: "Producto gratis", free_shipping: "Envío gratis" };
@@ -18,14 +18,14 @@ export default function PointsPage() {
 
   return (
     <>
-      <PageHeader title="Puntos y canjes">{manage && <Btn kind="primary" onClick={() => setEdit("new")}>Nueva opción de canje</Btn>}</PageHeader>
+      <PageHeader title="Puntos y canjes" subtitle="Opciones de canje y cola de canjes que necesitan atención.">{manage && <Btn kind="primary" onClick={() => setEdit("new")}>Nueva opción de canje</Btn>}</PageHeader>
       <Card title="Opciones de canje">
         <p className="muted">Editar una opción solo afecta canjes futuros; los códigos ya emitidos no cambian.</p>
         <Loading error={opts.error} loading={opts.loading} />
         {opts.data && <Table rows={opts.data.options} empty="Aún no hay opciones" cols={[
           { header: "Nombre", cell: (o: any) => o.name },
           { header: "Costo", cell: (o: any) => `${o.points_cost} pts`, align: "right" },
-          { header: "Beneficio", cell: (o: any) => <>{TYPES[o.reward_type]}{o.reward_value != null && ` · ${Number(o.reward_value)}${o.reward_type === "percentage" ? " %" : ""}`}{o.shopify_product_id && <span className="muted"> · producto {o.shopify_product_id}</span>}</> },
+          { header: "Beneficio", cell: (o: any) => <>{TYPES[o.reward_type]}{o.reward_value != null && ` · ${o.reward_type === "fixed_amount" ? cop(Number(o.reward_value)) : o.reward_type === "percentage" ? `${Number(o.reward_value)} %` : Number(o.reward_value)}`}{o.shopify_product_id && <span className="muted"> · producto {o.shopify_product_id}</span>}</> },
           { header: "Combina con", cell: (o: any) => ["productDiscounts", "orderDiscounts", "shippingDiscounts"].filter((k) => o.combines_with?.[k]).map((k) => ({ productDiscounts: "productos", orderDiscounts: "pedido", shippingDiscounts: "envío" } as any)[k]).join(", ") || "nada" },
           { header: "Estado", cell: (o: any) => <Badge value={o.active ? "active" : "disabled"} /> },
           { header: "", cell: (o: any) => manage && <Btn className="sm" onClick={() => setEdit(o)}>Editar</Btn> },
@@ -43,7 +43,7 @@ export default function PointsPage() {
           { header: "", cell: (r: any) => manage && (
             <div className="row">
               {r.status === "pending" && <Btn className="sm" disabled={busy} onClick={async () => { const x = await run(() => api(`/redemptions/${r.id}/retry`, { body: {} })); if (x) { x.ok ? probs.reload() : probs.reload(); } }}>Reintentar</Btn>}
-              {r.status === "pending" && <Btn className="sm" onClick={() => setReverse(r)}>Revertir</Btn>}
+              {r.status === "pending" && <Btn className="sm" kind="danger-outline" onClick={() => setReverse(r)}>Revertir</Btn>}
             </div>) },
         ]} />}
         <p className="muted">Los canjes fallidos ya devolvieron los puntos a la clienta automáticamente.</p>

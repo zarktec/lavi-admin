@@ -38,3 +38,8 @@ export const fmtDay = (d?: string | null) => (d ? new Date(d).toLocaleDateString
 export const cop = (n?: number | null) => (n == null ? "—" : new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n));
 export const pct = (n?: number | null) => (n == null ? "—" : `${(n * 100).toFixed(1)} %`);
 export const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** Número con separador de miles (es-CO). */
+export const num = (n?: number | null) => (n == null ? "—" : new Intl.NumberFormat("es-CO").format(n));
+/** Iniciales para avatares. */
+export const initials = (name?: string | null) => (name ?? "?").split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("") || "?";

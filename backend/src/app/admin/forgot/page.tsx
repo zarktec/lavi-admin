@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Field } from "../_components/ui";
+import { Field, AuthShell } from "../_components/ui";
 import { api } from "../_lib/api";
 
 export default function ForgotPage() {
@@ -18,7 +18,7 @@ export default function ForgotPage() {
     }
   }
   return (
-    <main className="auth">
+    <AuthShell>
       <h1>Recuperar acceso</h1>
       {sent ? (
         <p>Si el correo existe, te enviamos un enlace para definir una nueva contraseña. Vence en 1 hora.</p>
@@ -30,6 +30,6 @@ export default function ForgotPage() {
         </form>
       )}
       <p><Link href="/admin/login">Volver a ingresar</Link></p>
-    </main>
+    </AuthShell>
   );
 }

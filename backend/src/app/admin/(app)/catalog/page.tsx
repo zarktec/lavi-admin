@@ -27,9 +27,9 @@ export default function CatalogPage() {
             { header: "Presentación", cell: (v: any) => <>{v.name} {!v.active && <Badge value="disabled" />}</> },
             { header: "Volumen", cell: (v: any) => (v.volume_ml ? `${v.volume_ml} ml` : "—") },
             { header: "SKU", cell: (v: any) => v.sku ?? "—" },
-            { header: "Variante Shopify", cell: (v: any) => v.shopify_variant_id ?? <span className="muted">sin vincular</span> },
-            { header: "Config. vigente", cell: (v: any) => (v.current_version ? `v${v.current_version}` : <span className="error">sin publicar</span>) },
-            { header: "Tags", cell: (v: any) => `${v.tags_unclaimed}/${v.tags_total} libres` },
+            { header: "Variante Shopify", cell: (v: any) => v.shopify_variant_id ?? <span className="badge warn">Sin vincular</span> },
+            { header: "Config. vigente", cell: (v: any) => (v.current_version ? `v${v.current_version}` : <span className="badge warn">Sin publicar</span>) },
+            { header: "Tags", cell: (v: any) => `${v.tags_unclaimed} libres de ${v.tags_total}` },
             { header: "", cell: (v: any) => <div className="row">
               <Btn className="sm" onClick={() => setConfigsFor(v)}>Configuración</Btn>
               {manage && <Btn className="sm" onClick={() => setVariantModal({ product: p, variant: v })}>Editar</Btn>}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { TotpSetup } from "../_components/TotpSetup";
-import { Field } from "../_components/ui";
+import { Field, AuthShell } from "../_components/ui";
 import { api } from "../_lib/api";
 
 function InviteForm() {
@@ -26,18 +26,18 @@ function InviteForm() {
     }
   }
 
-  if (!token) return <main className="auth"><h1>Invitación</h1><p className="error">El enlace no es válido.</p></main>;
+  if (!token) return <AuthShell><h1>Invitación</h1><p className="error">El enlace no es válido.</p></AuthShell>;
   if (totp)
     return (
-      <main className="auth">
+      <AuthShell>
         <h1>Configura la verificación en dos pasos</h1>
         <TotpSetup uri={totp.uri} secret={totp.secret} />
         <p>Cuando la tengas lista, ingresa: te pediremos el primer código para activar tu cuenta.</p>
         <Link className="btn primary" href="/admin/login">Ir a ingresar</Link>
-      </main>
+      </AuthShell>
     );
   return (
-    <main className="auth">
+    <AuthShell>
       <h1>Bienvenida al panel</h1>
       <p>Define tu contraseña (mínimo 12 caracteres, con letras y números).</p>
       <form onSubmit={submit}>
@@ -47,7 +47,7 @@ function InviteForm() {
         {error && <p className="error" role="alert">{error}</p>}
         <button className="btn primary" style={{ width: "100%" }}>Crear cuenta</button>
       </form>
-    </main>
+    </AuthShell>
   );
 }
 
