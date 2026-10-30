@@ -133,6 +133,35 @@ export function Table<T>({ rows, cols, empty = "Sin resultados", onRow }: { rows
   );
 }
 
+/** Controles de paginación: «Anterior / Siguiente», rango mostrado y tamaño de página. */
+export function Pagination({ page, pageSize, total, totalPages, onPage, onPageSize, disabled, noun = "resultados" }: {
+  page: number; pageSize: number; total: number; totalPages: number; noun?: string; disabled?: boolean;
+  onPage: (p: number) => void; onPageSize?: (n: number) => void;
+}) {
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(total, page * pageSize);
+  return (
+    <nav className="row pager" aria-label="Paginación" style={{ justifyContent: "space-between", marginTop: 12 }}>
+      <span className="muted" aria-live="polite">{total === 0 ? `Sin ${noun}` : `${from}–${to} de ${total} ${noun}`}</span>
+      <div className="row">
+        {onPageSize && (
+          <label className="row muted" style={{ gap: 6 }}>
+            Por página
+            <select className="inline-input" style={{ width: "auto" }} value={pageSize} disabled={disabled} onChange={(e) => onPageSize(Number(e.target.value))}>
+              {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+        )}
+        <Btn className="sm" disabled={disabled || page <= 1} onClick={() => onPage(1)} aria-label="Primera página">«</Btn>
+        <Btn className="sm" disabled={disabled || page <= 1} onClick={() => onPage(page - 1)}>Anterior</Btn>
+        <span aria-current="page">Página {page} de {totalPages}</span>
+        <Btn className="sm" disabled={disabled || page >= totalPages} onClick={() => onPage(page + 1)}>Siguiente</Btn>
+        <Btn className="sm" disabled={disabled || page >= totalPages} onClick={() => onPage(totalPages)} aria-label="Última página">»</Btn>
+      </div>
+    </nav>
+  );
+}
+
 export function Field({ label, hint, children, wide }: { label: string; hint?: string; children: ReactNode; wide?: boolean }) {
   return (
     <label className={`field ${wide ? "wide" : ""}`}>
